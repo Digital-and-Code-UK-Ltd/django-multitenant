@@ -7,7 +7,8 @@ from django.dispatch import receiver
 
 from django_multitenant.mixins import TenantModelMixin, TenantManagerMixin
 from django_multitenant.models import TenantModel
-from django_multitenant.fields import TenantForeignKey
+from django_multitenant.fields import TenantForeignKey, TenantAutoPrimaryKey, TenantUUIDPrimaryKey, \
+    TenantIntegerPrimaryKey
 
 
 class Country(models.Model):
@@ -15,6 +16,7 @@ class Country(models.Model):
 
 
 class Account(TenantModel):
+    id = TenantAutoPrimaryKey()
     name = models.CharField(max_length=255)
     domain = models.CharField(max_length=255)
     subdomain = models.CharField(max_length=255)
@@ -49,6 +51,7 @@ class Employee(models.Model):
 
 
 class ModelConfig(TenantModel):
+    id = TenantAutoPrimaryKey()
     name = models.CharField(max_length=255)
     account = models.ForeignKey(Account, on_delete=models.CASCADE,
                                 related_name='configs')
@@ -61,6 +64,7 @@ class ModelConfig(TenantModel):
 
 
 class Manager(TenantModel):
+    id = TenantAutoPrimaryKey()
     name = models.CharField(max_length=255)
     account = models.ForeignKey(Account, on_delete=models.CASCADE,
                                 related_name='managers')
@@ -68,6 +72,7 @@ class Manager(TenantModel):
 
 
 class Project(TenantModel):
+    id = TenantAutoPrimaryKey()
     name = models.CharField(max_length=255)
     account = models.ForeignKey(Account, related_name='projects',
                                 on_delete=models.CASCADE)
@@ -83,6 +88,7 @@ class Project(TenantModel):
 
 
 class ProjectManager(TenantModel):
+    id = TenantAutoPrimaryKey()
     project = TenantForeignKey(Project, on_delete=models.CASCADE,
                                related_name='projectmanagers')
     manager = TenantForeignKey(Manager, on_delete=models.CASCADE)
@@ -110,6 +116,7 @@ class TaskManager(TenantManagerMixin, models.Manager):
 
 
 class Task(TenantModelMixin, models.Model):
+    id = TenantAutoPrimaryKey()
     name = models.CharField(max_length=255)
     project = TenantForeignKey(Project, on_delete=models.CASCADE,
                                related_name='tasks')
@@ -129,6 +136,7 @@ class Task(TenantModelMixin, models.Model):
 
 
 class SubTask(TenantModel):
+    id = TenantAutoPrimaryKey()
     name = models.CharField(max_length=255)
     type = models.CharField(max_length=255)
     account = models.ForeignKey(Account, on_delete=models.CASCADE)
@@ -142,6 +150,7 @@ class UnscopedModel(models.Model):
 
 
 class AliasedTask(TenantModel):
+    id = TenantAutoPrimaryKey()
     project_alias = TenantForeignKey(Project, on_delete=models.CASCADE)
     account = models.ForeignKey(Account, on_delete=models.CASCADE)
 
@@ -149,6 +158,7 @@ class AliasedTask(TenantModel):
 
 
 class Revenue(TenantModel):
+    id = TenantAutoPrimaryKey()
     # To test for correct tenant_id push down in query
     acc = models.ForeignKey(Account, on_delete=models.CASCADE,
                             related_name='revenues')
@@ -161,13 +171,13 @@ class Revenue(TenantModel):
 
 # Models for UUID tests
 class Organization(TenantModel):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id = TenantUUIDPrimaryKey(primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(max_length=255)
     tenant_id = 'id'
 
 
 class Record(TenantModel):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id = TenantUUIDPrimaryKey(primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(max_length=255)
     organization = TenantForeignKey(Organization, on_delete=models.CASCADE)
 
@@ -176,13 +186,14 @@ class Record(TenantModel):
 
 
 class TenantNotIdModel(TenantModel):
-    tenant_column = models.IntegerField(primary_key=True, editable=False)
+    tenant_column = TenantIntegerPrimaryKey(primary_key=True, editable=False)
     name = models.CharField(max_length=255)
 
     tenant_id = 'tenant_column'
 
 
 class SomeRelatedModel(TenantModel):
+    id = TenantAutoPrimaryKey()
     related_tenant = models.ForeignKey(TenantNotIdModel, on_delete=models.CASCADE)
     name = models.CharField(max_length=255)
 
@@ -190,6 +201,7 @@ class SomeRelatedModel(TenantModel):
 
 
 class MigrationTestModel(TenantModel):
+    id = TenantAutoPrimaryKey()
     name = models.CharField(max_length=255)
     tenant_id = 'id'
 

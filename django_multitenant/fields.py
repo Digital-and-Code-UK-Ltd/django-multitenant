@@ -1,6 +1,6 @@
 import logging
+
 from django.db import models
-from django.db.models.expressions import Col
 
 from .utils import get_current_tenant, get_tenant_column, get_tenant_filters
 
@@ -89,3 +89,21 @@ class TenantOneToOneField(models.OneToOneField, TenantForeignKey):
     def __init__(self, *args, **kwargs):
         kwargs['unique'] = False
         super(TenantOneToOneField, self).__init__(*args, **kwargs)
+
+
+class TenantPrimaryKeyMixin(models.Field):
+    def __init__(self, *args, **kwargs):
+        kwargs['primary_key'] = True
+        super().__init__(*args, **kwargs)
+
+
+class TenantAutoPrimaryKey(TenantPrimaryKeyMixin, models.BigAutoField):
+    pass
+
+
+class TenantUUIDPrimaryKey(TenantPrimaryKeyMixin, models.UUIDField):
+    pass
+
+
+class TenantIntegerPrimaryKey(TenantPrimaryKeyMixin, models.IntegerField):
+    pass

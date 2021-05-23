@@ -9,7 +9,7 @@ from django.db.backends.postgresql.base import (
     DatabaseClient,
     DatabaseIntrospection
 )
-from django_multitenant.fields import TenantForeignKey
+from django_multitenant.fields import TenantForeignKey, TenantPrimaryKeyMixin
 from django_multitenant.utils import get_model_by_db_table, get_tenant_column
 
 logger = logging.getLogger(__name__)
@@ -17,6 +17,33 @@ logger = logging.getLogger(__name__)
 
 class DatabaseSchemaEditor(PostgresqlDatabaseSchemaEditor):
     sql_create_column_inline_fk = None
+
+    # Override
+    def column_sql(self, model, field, include_default=False):
+        if issubclass(field, TenantPrimaryKeyMixin):
+            field.primary_key = False
+        return super().column_sql(model, field, include_default)
+
+    def create_model(self, model):
+        super().create_model(model)
+        if hasattr(model, 'tenant_id'):  # same as issubclass(model, TenantModel): :/
+            for field in model._meta.local_fields:
+                if issubclass(field, TenantPrimaryKeyMixin):
+                    tenant_column = self.quote_name(model.tenant_id)
+                    table_name = model._meta.db_table
+                    constraint_name = self.quote_name(f'{table_name}_pkey')
+                    quoted_table_name = self.quote_name(table_name)
+                    self.deferred_sql.extend([
+                        f"""
+                        ---
+                        --- Add composite primary key to {table_name}
+                        ---
+                        ALTER TABLE {quoted_table_name}
+                        ADD CONSTRAINT {constraint_name}
+                        PRIMARY KEY ({tenant_column}, id)
+                        """
+                    ])
+
 
     # Override
     def __enter__(self):
