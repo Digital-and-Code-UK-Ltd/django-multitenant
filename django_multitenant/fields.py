@@ -94,10 +94,16 @@ class TenantOneToOneField(models.OneToOneField, TenantForeignKey):
 class TenantPrimaryKeyMixin(models.Field):
     def __init__(self, *args, **kwargs):
         kwargs['primary_key'] = True
+        self.tenant_id = kwargs.pop('tenant_id', None)
         super().__init__(*args, **kwargs)
 
+    def deconstruct(self):
+        name, path, args, kwargs = super().deconstruct()
+        kwargs['tenant_id'] = self.tenant_id
+        return name, path, args, kwargs
 
-class TenantAutoPrimaryKey(TenantPrimaryKeyMixin, models.BigAutoField):
+
+class TenantAutoPrimaryKey(TenantPrimaryKeyMixin, models.AutoField):
     pass
 
 

@@ -20,29 +20,28 @@ class DatabaseSchemaEditor(PostgresqlDatabaseSchemaEditor):
 
     # Override
     def column_sql(self, model, field, include_default=False):
-        if issubclass(field, TenantPrimaryKeyMixin):
+        if issubclass(field.__class__, TenantPrimaryKeyMixin):
             field.primary_key = False
         return super().column_sql(model, field, include_default)
 
     def create_model(self, model):
         super().create_model(model)
-        if hasattr(model, 'tenant_id'):  # same as issubclass(model, TenantModel): :/
-            for field in model._meta.local_fields:
-                if issubclass(field, TenantPrimaryKeyMixin):
-                    tenant_column = self.quote_name(model.tenant_id)
-                    table_name = model._meta.db_table
-                    constraint_name = self.quote_name(f'{table_name}_pkey')
-                    quoted_table_name = self.quote_name(table_name)
-                    self.deferred_sql.extend([
-                        f"""
-                        ---
-                        --- Add composite primary key to {table_name}
-                        ---
-                        ALTER TABLE {quoted_table_name}
-                        ADD CONSTRAINT {constraint_name}
-                        PRIMARY KEY ({tenant_column}, id)
-                        """
-                    ])
+        for field in model._meta.local_fields:
+            if issubclass(field.__class__, TenantPrimaryKeyMixin):
+                tenant_column = self.quote_name(field.tenant_id)
+                table_name = model._meta.db_table
+                constraint_name = self.quote_name(f'{table_name}_pkey')
+                quoted_table_name = self.quote_name(table_name)
+                self.deferred_sql.extend([
+                    f"""
+                    ---
+                    --- Add composite primary key to {table_name}
+                    ---
+                    ALTER TABLE {quoted_table_name}
+                    ADD CONSTRAINT {constraint_name}
+                    PRIMARY KEY ({tenant_column}, id)
+                    """
+                ])
 
 
     # Override
