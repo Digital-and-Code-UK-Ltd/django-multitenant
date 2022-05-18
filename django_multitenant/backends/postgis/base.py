@@ -112,4 +112,4 @@ class DatabaseFeatures(PostGISDatabaseFeatures):
 class DatabaseWrapper(PostGISDatabaseWrapper):
     # Override
     SchemaEditorClass = PostGISSchemaEditor
-    features_class = DatabaseFeatures
+    #features_class = DatabaseFeatures
