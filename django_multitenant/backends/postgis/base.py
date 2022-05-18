@@ -1,6 +1,7 @@
 import logging
 
 import django
+from django.db.backends.base.base import NO_DB_ALIAS
 from django.contrib.gis.db.backends.postgis.schema import PostGISSchemaEditor as BasePostGISSchemaEditor
 from django.contrib.gis.db.backends.postgis.base import (
     DatabaseFeatures as PostGISDatabaseFeatures,
