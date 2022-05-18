@@ -5,6 +5,8 @@ from django.contrib.gis.db.backends.postgis.schema import PostGISSchemaEditor as
 from django.contrib.gis.db.backends.postgis.base import (
     DatabaseFeatures as PostGISDatabaseFeatures,
     DatabaseWrapper as PostGISDatabaseWrapper,
+    PostGISIntrospection,
+    PostGISOperations,
 )
 from django_multitenant.fields import TenantForeignKey
 from django_multitenant.utils import get_model_by_db_table, get_tenant_column
@@ -113,3 +115,12 @@ class DatabaseWrapper(PostGISDatabaseWrapper):
     # Override
     SchemaEditorClass = PostGISSchemaEditor
     features_class = DatabaseFeatures
+    introspection_class = PostGISIntrospection
+    ops_class = PostGISOperations
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if kwargs.get('alias', '') != NO_DB_ALIAS:
+            self.features = DatabaseFeatures(self)
+            self.ops = PostGISOperations(self)
+            self.introspection = PostGISIntrospection(self)
