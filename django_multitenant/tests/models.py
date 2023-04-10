@@ -1,9 +1,8 @@
 import uuid
 
 from django.db import models
-from django.db.models.signals import pre_save
-from django.dispatch import receiver
 
+from django.contrib.auth import get_user_model
 
 from django_multitenant.mixins import TenantModelMixin, TenantManagerMixin
 from django_multitenant.models import TenantModel
@@ -29,9 +28,6 @@ class Account(TenantModel):
 
     # TODO change to Meta
     tenant_id = "id"
-
-    def __str__(self):
-        return "{}".format(self.name)
 
 
 class Employee(models.Model):
@@ -93,9 +89,6 @@ class Project(TenantModel):
     )
     tenant_id = "account_id"
 
-    def __str__(self):
-        return "{} ({})".format(self.name, self.account)
-
 
 class ProjectManager(TenantModel):
     project = TenantForeignKey(
@@ -139,9 +132,6 @@ class Task(TenantModelMixin, models.Model):
 
     tenant_id = "account_id"
 
-    def __str__(self):
-        return "{} ({})".format(self.name, self.project)
-
 
 class SubTask(TenantModel):
     name = models.CharField(max_length=255)
@@ -179,7 +169,9 @@ class Revenue(TenantModel):
 class Organization(TenantModel):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(max_length=255)
-    tenant_id = "id"
+
+    class TenantMeta:
+        tenant_field_name = "id"
 
 
 class Record(TenantModel):
@@ -187,7 +179,8 @@ class Record(TenantModel):
     name = models.CharField(max_length=255)
     organization = TenantForeignKey(Organization, on_delete=models.CASCADE)
 
-    tenant_id = "organization_id"
+    class TenantMeta:
+        tenant_id = "organization_id"
 
 
 class TenantNotIdModel(TenantModel):
@@ -211,3 +204,97 @@ class MigrationTestModel(TenantModel):
 
 class MigrationTestReferenceModel(models.Model):
     name = models.CharField(max_length=255)
+
+
+class Tenant(TenantModel):
+    tenant_id = "id"
+    name = models.CharField("tenant name", max_length=100)
+
+
+class Business(TenantModel):
+    tenant = models.ForeignKey(Tenant, blank=True, null=True, on_delete=models.SET_NULL)
+    bk_biz_id = models.IntegerField("business ID")
+    bk_biz_name = models.CharField("business name", max_length=100)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["id", "tenant_id"], name="unique_business_tenant"
+            )
+        ]
+
+    class TenantMeta:
+        tenant_field_name = "tenant_id"
+
+
+class Template(TenantModel):
+    tenant = models.ForeignKey(Tenant, blank=True, null=True, on_delete=models.SET_NULL)
+    business = TenantForeignKey(
+        Business, blank=True, null=True, on_delete=models.SET_NULL
+    )
+    name = models.CharField("name", max_length=100)
+
+    class TenantMeta:
+        tenant_field_name = "tenant_id"
+
+
+# Non-Tenant Model which should be Reference Table
+# to be referenced by Store which is a Tenant Model
+# in Citus 10.
+class Staff(models.Model):
+    name = models.CharField(max_length=50)
+
+
+class Store(TenantModel):
+    tenant_id = "id"
+    name = models.CharField(max_length=50)
+    address = models.CharField(max_length=255)
+    email = models.CharField(max_length=50)
+    user = models.ForeignKey(get_user_model(), on_delete=models.CASCADE, null=True)
+
+    store_staffs = models.ManyToManyField(
+        Staff, through="StoreStaff", through_fields=("store", "staff"), blank=True
+    )
+
+
+class StoreStaff(models.Model):
+    store = models.ForeignKey(Store, on_delete=models.CASCADE)
+    staff = models.ForeignKey(Staff, on_delete=models.CASCADE)
+
+
+class Product(TenantModel):
+    store = models.ForeignKey(Store, on_delete=models.CASCADE)
+    tenant_id = "store_id"
+    name = models.CharField(max_length=255)
+    description = models.TextField()
+
+    class Meta:
+        unique_together = ["id", "store"]
+
+
+class Purchase(TenantModel):
+    store = models.ForeignKey(Store, on_delete=models.CASCADE)
+    tenant_id = "store_id"
+    product_purchased = models.ManyToManyField(
+        Product, through="Transaction", through_fields=("purchase", "product")
+    )
+
+    class Meta:
+        unique_together = ["id", "store"]
+
+
+class Transaction(TenantModel):
+    store = models.ForeignKey(Store, on_delete=models.CASCADE)
+    tenant_id = "store_id"
+    purchase = TenantForeignKey(
+        Purchase, on_delete=models.CASCADE, blank=True, null=True
+    )
+    product = TenantForeignKey(Product, on_delete=models.CASCADE)
+    date = models.DateField(auto_now_add=True)
+
+
+class MigrationUseInMigrationsModel(TenantModel):
+    name = models.CharField(max_length=255)
+
+    class TenantMeta:
+        tenant_field_name = "id"

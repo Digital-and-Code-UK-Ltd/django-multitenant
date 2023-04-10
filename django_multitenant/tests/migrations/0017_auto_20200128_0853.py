@@ -3,7 +3,6 @@
 from django.db import migrations, models
 import django.db.models.deletion
 from django.conf import settings
-import django_multitenant.fields
 
 from django_multitenant.db import migrations as tenant_migrations
 
@@ -59,7 +58,6 @@ def get_operations():
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("tests", "0016_auto_20191025_0844"),
     ]

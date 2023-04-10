@@ -3,13 +3,9 @@
 from __future__ import unicode_literals
 
 from django.db import migrations, models
-import django.db.models.deletion
-import django_multitenant.fields
-import django_multitenant.mixins
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("tests", "0007_alter_foreignkey_field"),
     ]

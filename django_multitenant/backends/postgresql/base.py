@@ -1,14 +1,9 @@
 import logging
 import django
-from django.apps import apps
 from django.db.backends.postgresql.base import (
     DatabaseFeatures as PostgresqlDatabaseFeatures,
     DatabaseWrapper as PostgresqlDatabaseWrapper,
     DatabaseSchemaEditor as PostgresqlDatabaseSchemaEditor,
-    DatabaseCreation,
-    DatabaseOperations as PostgresqlDatabaseOperations,
-    DatabaseClient,
-    DatabaseIntrospection,
 )
 from django_multitenant.fields import TenantForeignKey
 from django_multitenant.utils import get_model_by_db_table, get_tenant_column
@@ -17,14 +12,14 @@ logger = logging.getLogger(__name__)
 
 
 class DatabaseSchemaEditor(PostgresqlDatabaseSchemaEditor):
-    sql_create_column_inline_fk = None
 
+    sql_create_column_inline_fk = None
     # Override
     def __enter__(self):
-        ret = super(DatabaseSchemaEditor, self).__enter__()
+        ret = super().__enter__()
         return ret
 
-    # Override
+    # pylint: disable=too-many-arguments
     def _alter_field(
         self,
         model,
@@ -36,8 +31,12 @@ class DatabaseSchemaEditor(PostgresqlDatabaseSchemaEditor):
         new_db_params,
         strict=False,
     ):
+        """
+        If there is a change in the field, this method assures that if the field is type of TenantForeignKey
+        and db_constraint does not exist, adds the foreign key constraint.
+        """
 
-        super(DatabaseSchemaEditor, self)._alter_field(
+        super()._alter_field(
             model,
             old_field,
             new_field,
@@ -70,6 +69,9 @@ class DatabaseSchemaEditor(PostgresqlDatabaseSchemaEditor):
 
     # Override
     def _create_fk_sql(self, model, field, suffix):
+        """
+        This method overrides the additions foreign key constraint sql and adds the tenant column to the constraint
+        """
         if isinstance(field, TenantForeignKey):
             try:
                 # test if both models exists
@@ -105,7 +107,7 @@ class DatabaseSchemaEditor(PostgresqlDatabaseSchemaEditor):
                 ),
                 "deferrable": self.connection.ops.deferrable_sql(),
             }
-        return super(DatabaseSchemaEditor, self)._create_fk_sql(model, field, suffix)
+        return super()._create_fk_sql(model, field, suffix)
 
     # Override
     def execute(self, sql, params=()):
@@ -114,17 +116,19 @@ class DatabaseSchemaEditor(PostgresqlDatabaseSchemaEditor):
         if sql and not params:
             for statement in str(sql).split(";"):
                 if statement and not statement.isspace():
-                    super(DatabaseSchemaEditor, self).execute(statement)
+                    super().execute(statement)
         elif sql:
-            super(DatabaseSchemaEditor, self).execute(sql, params)
+            super().execute(sql, params)
 
 
-class DatabaseFeatures(PostgresqlDatabaseFeatures):
+# noqa
+class TenantDatabaseFeatures(PostgresqlDatabaseFeatures):
     # The default Django behaviour is to collapse the fields to just the 'id'
     # field. This doesn't work because we're using a composite primary key. In
     # Django version 3.0 a function was added that we can override to specify
     # for specific models that this behaviour should be disabled.
     def allows_group_by_selected_pks_on_model(self, model):
+        # pylint: disable=import-outside-toplevel
         from django_multitenant.models import TenantModel
 
         if issubclass(model, TenantModel):
@@ -137,42 +141,7 @@ class DatabaseFeatures(PostgresqlDatabaseFeatures):
         allows_group_by_selected_pks = False
 
 
-class DatabaseOperations(PostgresqlDatabaseOperations):
-    pass
-    # def sequence_reset_sql(self, style, model_list):
-    #     from django.db import models
-    #     output = []
-    #     qn = self.quote_name
-    #     for model in model_list:
-    #         # Use `coalesce` to set the sequence for each model to the max pk value if there are records,
-    #         # or 1 if there are none. Set the `is_called` property (the third argument to `setval`) to true
-    #         # if there are records (as the max pk value is already in use), otherwise set it to false.
-    #         # Use pg_get_serial_sequence to get the underlying sequence name from the table name
-    #         # and column name (available since PostgreSQL 8)
-    #
-    #         for f in model._meta.local_fields:
-    #             if isinstance(f, models.AutoField):
-    #                 # START CHANGES
-    #                 output.append(
-    #                     "%s setval(pg_get_serial_sequence('%s','%s'), "
-    #                     "coalesce(max(%s), 1), max(%s) %s null);" % (
-    #                         style.SQL_KEYWORD('SELECT'),
-    #                         style.SQL_TABLE(qn(model._meta.db_table)),
-    #                         style.SQL_FIELD(f.column),
-    #                         style.SQL_FIELD(qn(f.column)),
-    #                         style.SQL_FIELD(qn(f.column)),
-    #                         style.SQL_KEYWORD('IS NOT'),
-    #                         style.SQL_KEYWORD('FROM'),
-    #                         style.SQL_TABLE(qn(model._meta.db_table)),
-    #                     )
-    #                 )
-    #                 # END CHANGES
-    #                 break  # Only one AutoField is allowed per model, so don't bother continuing.
-    #     return output
-
-
 class DatabaseWrapper(PostgresqlDatabaseWrapper):
     # Override
     SchemaEditorClass = DatabaseSchemaEditor
-    features_class = DatabaseFeatures
-    ops_class = DatabaseOperations
+    features_class = TenantDatabaseFeatures

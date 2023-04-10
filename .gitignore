@@ -4,3 +4,6 @@
 django_multitenant.egg-info/
 .venv
 .tox/
+venv/*
+coverage.xml
+.coverage

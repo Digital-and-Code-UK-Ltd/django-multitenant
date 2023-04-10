@@ -1,5 +1,4 @@
 from django.apps.registry import apps as global_apps
-from django.db import connection
 from django.db.migrations.operations.base import Operation
 from django.db.migrations.state import _get_app_label_and_model_name
 
@@ -55,7 +54,9 @@ class Distribute(Operation):
         # We now need the real model, the problem is that the __fake__ model doesn't have access
         # to anything else (functions / properties) than the Fields
         # So to access the model.tenant_id, we need this.
-        app = global_apps.get_app_config(fake_model._meta.app_label if fake_model else app_label)
+        app = global_apps.get_app_config(
+            fake_model._meta.app_label if fake_model else app_label
+        )
         self.model = None
 
         for model in app.get_models():

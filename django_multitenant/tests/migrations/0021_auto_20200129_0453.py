@@ -2,11 +2,9 @@
 
 from django.db import migrations, models
 import django.db.models.deletion
-import django_multitenant.fields
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("tests", "0020_auto_20200129_0404"),
     ]
