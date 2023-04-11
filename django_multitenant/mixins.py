@@ -136,12 +136,16 @@ class TenantModelMixin:
                 and val != self.tenant_object
             )
 
-        if (
-            attrname in (self.tenant_field, get_tenant_field(self).name)
-            and not self._state.adding
-            and is_val_equal_to_tenant(val)
-        ):
-            self._try_update_tenant = True
+        try:
+            if (
+                attrname in (self.tenant_field, get_tenant_field(self).name)
+                and not self._state.adding
+                and is_val_equal_to_tenant(val)
+            ):
+                self._try_update_tenant = True
+        except AttributeError:
+            if self.__module__ != "__fake__":
+                raise
 
         return super().__setattr__(attrname, val)
 
