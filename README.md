@@ -6,13 +6,17 @@ Enables easy scale-out by adding the tenant context to your queries, enabling th
 
 There are architecures for building multi-tenant databases viz. **Create one database per tenant**, **Create one schema per tenant** and **Have all tenants share the same table(s)**. This library is based on the 3rd design i.e **Have all tenants share the same table(s)**, it assumes that all the tenant relates models/tables have a tenant_id column for representing a tenant.
 
-The following link talks more about the trade-offs on when and how to choose the right architecture for your multi-tenat database:
+The following link talks more about the trade-offs on when and how to choose the right architecture for your multi-tenant database:
 
 https://www.citusdata.com/blog/2016/10/03/designing-your-saas-database-for-high-scalability/
+
+The following blogpost is a good starting point to start to use django-multitenant
+https://www.citusdata.com/blog/2023/05/09/evolving-django-multitenant-to-build-scalable-saas-apps-on-postgres-and-citus/
 
 **Other useful links on multi-tenancy**:
 1. https://www.citusdata.com/blog/2017/03/09/multi-tenant-sharding-tutorial/
 1. https://www.citusdata.com/blog/2017/06/02/scaling-complex-sql-transactions/
+1. https://www.youtube.com/watch?v=RKSwjaZKXL0
 
 
 ## Installation:
@@ -42,7 +46,7 @@ In order to use this library you can either use Mixins or have your models inher
    ```
 2. All models should inherit the TenantModel class.
    `Ex: class Product(TenantModel):`
-3. Define a static variable named tenant_id and specify the tenant column using this variable.You can define tenant_id in three ways. Any of them is acceptavle 
+3. Define a static variable named tenant_id and specify the tenant column using this variable.You can define tenant_id in three ways. Any of them is acceptable 
    * Using TenantMeta.tenant_field_name variable
    * Using TenantMeta.tenant_id variable
    * Using tenant_id field
@@ -91,7 +95,7 @@ In order to use this library you can either use Mixins or have your models inher
    `Ex: tenant_id='store_id'`
 1. All foreign keys to TenantModel subclasses should use TenantForeignKey in place of
    models.ForeignKey
-1. Referenced table in TenenatForeignKey should include a unique key including tenant_id and primary key
+1. Referenced table in TenantForeignKey should include a unique key including tenant_id and primary key
    ```
    Ex:       
    class Meta:
