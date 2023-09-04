@@ -9,8 +9,10 @@ from .utils import get_current_tenant, get_tenant_column, get_tenant_filters
 
 logger = logging.getLogger(__name__)
 
+_M = TypeVar("_M", bound=Optional[models.Model])
 
-class TenantForeignKey(models.ForeignKey):
+
+class TenantForeignKey(models.ForeignKey[_M]):
     """
     Should be used in place of models.ForeignKey for all foreign key relationships to
     subclasses of TenantModel.
@@ -108,7 +110,7 @@ class TenantForeignKey(models.ForeignKey):
         return condition
 
 
-class TenantOneToOneField(models.OneToOneField, TenantForeignKey):
+class TenantOneToOneField(models.OneToOneField[_M], TenantForeignKey):
     # Override
     def __init__(self, *args, **kwargs):
         kwargs["unique"] = False
