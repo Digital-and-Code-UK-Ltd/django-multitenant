@@ -42,7 +42,7 @@ def get_tenant_column(model_class_or_instance):
     """
     try:
         if inspect.isclass(model_class_or_instance):
-            return model_class_or_instance.model_tenant_field
+            return model_class_or_instance.tenant_id
         else:
             return model_class_or_instance.tenant_field
     except Exception as not_a_tenant_model:
