@@ -56,10 +56,9 @@ def get_tenant_field(model_class_or_instance):
     Gets the tenant field object from the model
     """
     tenant_column = get_tenant_column(model_class_or_instance)
-    all_fields = model_class_or_instance._meta.fields
     try:
-        return next(field for field in all_fields if field.column == tenant_column)
-    except StopIteration as no_field_found:
+        return getattr(model_class_or_instance._meta.model, tenant_column).field
+    except AttributeError as no_field_found:
         raise ValueError(
             f'No field found in {type(model_class_or_instance).name} with column name "{tenant_column}"'
         ) from no_field_found
