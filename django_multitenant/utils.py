@@ -40,11 +40,11 @@ def get_tenant_column(model_class_or_instance):
     """
     Get the tenant field from the model object or class
     """
-    if inspect.isclass(model_class_or_instance):
-        model_class_or_instance = model_class_or_instance()
-
     try:
-        return model_class_or_instance.tenant_field
+        if inspect.isclass(model_class_or_instance):
+            return model_class_or_instance.model_tenant_field
+        else:
+            return model_class_or_instance.tenant_field
     except Exception as not_a_tenant_model:
         raise ValueError(
             f"{model_class_or_instance.__class__.__name__} is not an instance or a subclass of TenantModel or does not inherit from TenantMixin"
