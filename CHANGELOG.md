@@ -1,3 +1,19 @@
+### Django-Multitenant v4.1.1 (December 18, 2023) ###
+
+* Fix utils to not require TENANT_USE_ASGIREF to be defined in the host django project (#206)
+
+### Django-Multitenant v4.1.0 (December 14, 2023) ###
+
+* Use asgiref when available instead of thread locals (#176) (#198) 
+
+### Django-Multitenant v4.0.0 (September 26, 2023) ###
+
+* Fixes citus 11.3 identity column bigint constraint (#181)
+
+* Adds new python versions for dj3.2 (#188)
+
+* Adds Citus 12  and Django 4.1 and 4.2 support (#197)
+
 ### Django-Multitenant v3.2.1 (April 10, 2023) ###
 
 * Add m2m with no through_defaults fix (#170)
